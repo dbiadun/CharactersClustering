@@ -1,0 +1,14 @@
+<html>
+<head></head>
+<body>
+{% for cluster in clustered_images %}
+    {% for image in cluster %}
+        <img src={{image.path}}>
+    {% endfor %}
+    {% for image in cluster %}
+        {{ image.path }}
+    {% endfor %}
+    <hr>
+{% endfor %}
+</body>
+</html>
