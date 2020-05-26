@@ -22,7 +22,7 @@ class ClusteringHandler:
                 json.dump(distances.tolist(), fh)
 
         clustering = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average',
-                                             distance_threshold=0.4)
+                                             distance_threshold=c.DISTANCE_THRESHOLD)
         clustering.fit(distances)
         clusters = ClusteringHandler._get_clusters(clustering, images)
         return clusters

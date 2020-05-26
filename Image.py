@@ -14,6 +14,8 @@ class Image:
         """
         self.img = img
         self.path = path
+        self.proportions = 1
+
         self.top_border = 0
         self.right_border = 0
         self.bottom_border = 0
@@ -22,17 +24,54 @@ class Image:
         self._simplify_colors()
         self._reduce_dimension()
         self._cut_borders_off(0)
+
+        self._set_proportions()
+
         self._cut_borders_off(c.DENSITY_THRESHOLD)
 
-    def get_scaled_image(self, x, y):
-        new_img = np.zeros((x, y), int)
-        cur_x, cur_y = self.img.shape
+        self.top_black_dists = np.zeros(self.img.shape, int)
+        self.right_black_dists = np.zeros(self.img.shape, int)
+        self.bottom_black_dists = np.zeros(self.img.shape, int)
+        self.left_black_dists = np.zeros(self.img.shape, int)
 
-        for i in range(x):
-            for j in range(y):
-                new_img[i, j] = self.img[i * cur_x // x, j * cur_y // y]
+        self.max_top_black_dist = 0
+        self.max_middle_v_black_dist = 0
+        self.max_bottom_black_dist = 0
+        self.max_left_black_dist = 0
+        self.max_middle_h_black_dist = 0
+        self.max_right_black_dist = 0
 
+        self._set_black_dists()
+        self._normalize_max_black_dists()
+
+    def get_scaled_image(self, y, x):
+        # new_img = np.zeros((y, x), int)
+        cur_y, cur_x = self.img.shape
+        old_y_indices = np.arange(y) * cur_y // y
+        # [i * cur_y // y for i in range(y)]
+        old_x_indices = np.arange(x) * cur_x // x
+        # [j * cur_x // x for j in range(x)]
+        new_img = self.img[np.ix_(old_y_indices, old_x_indices)]
+        # for i in range(y):
+        #     for j in range(x):
+        #         new_img[i, j] = self.img[old_y_indices[i], old_x_indices[j]]
         return new_img
+
+    def get_scaled_black_dists(self, y, x):
+        top_d = np.zeros((y, x), int)
+        right_d = np.zeros((y, x), int)
+        bottom_d = np.zeros((y, x), int)
+        left_d = np.zeros((y, x), int)
+        cur_y, cur_x = self.img.shape
+
+        for i in range(y):
+            for j in range(x):
+                top_d[i, j] = self.top_black_dists[i * cur_y // y, j * cur_x // x] * y // cur_y
+                right_d[i, j] = self.right_black_dists[i * cur_y // y, j * cur_x // x] * x // cur_x
+                bottom_d[i, j] = self.bottom_black_dists[i * cur_y // y, j * cur_x // x] * y // cur_y
+                left_d[i, j] = self.left_black_dists[i * cur_y // y, j * cur_x // x] * x // cur_x
+
+        return top_d, right_d, bottom_d, left_d
 
     def get_printable_image(self):
         """
@@ -133,3 +172,85 @@ class Image:
         self.left_border += left_border
 
         self.img = self.img[top_border:self.img.shape[0] - bottom_border, left_border:self.img.shape[1] - right_border]
+
+    def _set_proportions(self):
+        x, y = self.img.shape
+        self.proportions = x / y
+
+    def _set_black_dists(self):
+        y, x = self.img.shape
+
+        for j in range(x):
+            dist = 0
+            after_first_black = False
+            for i in range(y):
+                if self.img[i][j] == c.BLACK:
+                    self.top_black_dists[i][j] = 0
+                    if after_first_black:
+                        if dist > self.max_middle_v_black_dist:
+                            self.max_middle_v_black_dist = dist
+                    else:
+                        if 0 < j < x - 1:
+                            # Border white sequence shouldn't be taken into consideration
+                            if dist > self.max_top_black_dist:
+                                self.max_top_black_dist = dist
+                        after_first_black = True
+                    dist = 0
+                else:
+                    dist += 1
+                    self.top_black_dists[i][j] = dist
+            if 0 < j < x - 1:
+                if dist > self.max_bottom_black_dist:
+                    self.max_bottom_black_dist = dist
+
+        for i in range(y):
+            dist = 0
+            for j in range(x - 1, -1, -1):
+                if self.img[i][j] == c.BLACK:
+                    self.right_black_dists[i][j] = 0
+                    dist = 0
+                else:
+                    dist += 1
+                    self.right_black_dists[i][j] = dist
+
+        for j in range(x):
+            dist = 0
+            for i in range(y - 1, -1, -1):
+                if self.img[i][j] == c.BLACK:
+                    self.bottom_black_dists[i][j] = 0
+                    dist = 0
+                else:
+                    dist += 1
+                    self.bottom_black_dists[i][j] = dist
+
+        for i in range(y):
+            dist = 0
+            after_first_black = False
+            for j in range(x):
+                if self.img[i][j] == c.BLACK:
+                    self.left_black_dists[i][j] = 0
+                    if after_first_black:
+                        if dist > self.max_middle_h_black_dist:
+                            self.max_middle_h_black_dist = dist
+                    else:
+                        if 0 < i < y - 1:
+                            if dist > self.max_left_black_dist:
+                                self.max_left_black_dist = dist
+                        after_first_black = True
+                    dist = 0
+                else:
+                    dist += 1
+                    self.left_black_dists[i][j] = dist
+            if 0 < i < y - 1:
+                if dist > self.max_right_black_dist:
+                    self.max_right_black_dist = dist
+
+    def _normalize_max_black_dists(self):
+        y, x = self.img.shape
+
+        self.max_top_black_dist /= y
+        self.max_middle_v_black_dist /= y
+        self.max_bottom_black_dist /= y
+        self.max_left_black_dist /= x
+        self.max_middle_h_black_dist /= x
+        self.max_right_black_dist /= x
