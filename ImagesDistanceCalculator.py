@@ -18,24 +18,48 @@ class ImagesDistanceCalculator:
         max_blac_dists_distance = ImagesDistanceCalculator._get_max_black_dists_distance(image1, image2)
 
         return main_distance + 0.001 * (size_distance + borders_distance) + 0.5 * (
-                    2 ** (2 * proportions_distance) - 1) + 0.2 * (2 ** (2 * max_blac_dists_distance) - 1)
+                2 ** (2 * proportions_distance) - 1) + 0.2 * (2 ** (2 * max_blac_dists_distance) - 1)
 
     @staticmethod
-    def _get_scaled_image_arrays(image1, image2):
+    def _get_scaled_image_arrays_masks_and_sizes(image1, image2):
         y, x = ImagesDistanceCalculator._get_scaled_images_shape(image1, image2)
-        img1 = image1.get_scaled_image(y, x)
-        img2 = image2.get_scaled_image(y, x)
 
-        return img1, img2
+        img1 = np.empty((0, 0))
+        img2 = np.empty((0, 0))
+        mask1 = np.empty((0, 0))
+        mask2 = np.empty((0, 0))
+        mask_size1 = 1
+        mask_size2 = 1
+
+        images_found = False
+        for i in range(len(image1.scaled_image_sizes)):
+            if max(y, x) <= image1.scaled_image_sizes[i]:
+                img1 = image1.scaled_images[i]
+                img2 = image2.scaled_images[i]
+                mask1 = image1.scaled_masks[i]
+                mask2 = image2.scaled_masks[i]
+                mask_size1 = image1.mask_sizes[i]
+                mask_size2 = image2.mask_sizes[i]
+                images_found = True
+                break
+
+        if not images_found:
+            img1 = image1.get_scaled_image(y, x)
+            img2 = image2.get_scaled_image(y, x)
+            mask1 = img1 == c.BLACK
+            mask2 = img2 == c.BLACK
+            mask_size1 = img1[mask1].size
+            mask_size2 = img2[mask2].size
+
+        return img1, img2, mask1, mask2, mask_size1, mask_size2
 
     @staticmethod
     def _get_main_distance(image1, image2):
-        img1, img2 = ImagesDistanceCalculator._get_scaled_image_arrays(image1, image2)
+        img1, img2, mask1, mask2, mask_size1, mask_size2 = ImagesDistanceCalculator._get_scaled_image_arrays_masks_and_sizes(
+            image1, image2)
 
-        black1 = (img1 == c.BLACK)
-        black2 = (img2 == c.BLACK)
-        dist1 = img1[black1 & np.invert(black2)].size / img1[black1].size
-        dist2 = img2[black2 & np.invert(black1)].size / img2[black2].size
+        dist1 = img1[mask1 & np.invert(mask2)].size / mask_size1
+        dist2 = img2[mask2 & np.invert(mask1)].size / mask_size2
         return dist1 + dist2
 
     @staticmethod

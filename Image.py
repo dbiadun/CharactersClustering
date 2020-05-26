@@ -41,6 +41,12 @@ class Image:
         self.max_middle_h_black_dist = 0
         self.max_right_black_dist = 0
 
+        self.scaled_image_sizes = [5, 10, 20, 40]
+        self.scaled_images = []
+        self.scaled_masks = []
+        self.mask_sizes = []
+        self._set_scaled_images_and_masks()
+
         self._set_black_dists()
         self._normalize_max_black_dists()
 
@@ -176,6 +182,15 @@ class Image:
     def _set_proportions(self):
         x, y = self.img.shape
         self.proportions = x / y
+
+    def _set_scaled_images_and_masks(self):
+        for size in self.scaled_image_sizes:
+            img = self.get_scaled_image(size, size)
+            mask = img == c.BLACK
+            mask_size = img[mask].size
+            self.scaled_images.append(img)
+            self.scaled_masks.append(mask)
+            self.mask_sizes.append(mask_size)
 
     def _set_black_dists(self):
         y, x = self.img.shape
