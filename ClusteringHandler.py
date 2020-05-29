@@ -18,8 +18,9 @@ class ClusteringHandler:
                 distances = json.load(fh)
         else:
             distances = ClusteringHandler._compute_distances_matrix(images)
-            with open('distances.json', 'w') as fh:
-                json.dump(distances.tolist(), fh)
+            if c.SAVE_DISTANCES:
+                with open('distances.json', 'w') as fh:
+                    json.dump(distances.tolist(), fh)
 
         clustering = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average',
                                              distance_threshold=c.DISTANCE_THRESHOLD)
