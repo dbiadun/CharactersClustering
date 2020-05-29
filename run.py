@@ -3,6 +3,7 @@ import sys
 from ImageLoader import ImageLoader
 from ClusteringHandler import ClusteringHandler
 from HTMLCreator import HTMLCreator
+from ClustersPrinter import ClustersPrinter
 import constants as c
 
 if len(sys.argv) < 2:
@@ -13,4 +14,4 @@ else:
     clustered_images = ClusteringHandler.cluster(images)
     HTMLCreator.create_html(c.HTML_TEMPLATE, c.HTML_OUTPUT, clustered_images=clustered_images,
                             clusters_count=len(clustered_images))
-
+    ClustersPrinter.print_clusters_to_file(clustered_images, c.FILE_OUTPUT)

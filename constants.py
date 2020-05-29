@@ -6,3 +6,4 @@ DISTANCES_COMPUTED_YET = False
 DISTANCE_THRESHOLD = 0.55
 HTML_TEMPLATE = 'template.html'
 HTML_OUTPUT = 'index.html'
+FILE_OUTPUT = 'results'
