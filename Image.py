@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import constants as c
 
@@ -13,7 +14,7 @@ class Image:
         white borders and stores size of those borders.
         """
         self.img = img
-        self.path = path
+        self.path = os.path.relpath(path)
         self.proportions = 1
 
         self.top_border = 0
