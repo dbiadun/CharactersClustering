@@ -1,5 +1,8 @@
 # Characters Clustering
 
+This program clusters monochromatic images representing
+characters.
+
 ## Solution description
 I'm using hierarchical clustering with average linkage.
 I'm preprocessing images so that all pixels are
